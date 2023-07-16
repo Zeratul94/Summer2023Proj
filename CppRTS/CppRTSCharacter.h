@@ -24,6 +24,12 @@ public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	/** Destinations to go to */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	TArray<FVector> MoveDestinations;
+	/** Destinations we have been sent to **/
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	TArray<FVector> CommandDestinations;
 private:
 	/** Top down camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))

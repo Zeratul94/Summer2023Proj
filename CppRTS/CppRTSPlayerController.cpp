@@ -75,7 +75,7 @@ void ACppRTSPlayerController::AssignMoveTargets(TArray<ACppRTSCharacter*> Units,
 		NearUnits.Add(Units[i]);
 		UnitActors.Add(Cast<AActor>(Units[i]));
 	}
-	FVector AvgLoc = UGameplayStatics::GetActorArrayAverageLocation(UnitActors);	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	FVector AvgLoc = UGameplayStatics::GetActorArrayAverageLocation(UnitActors);
 
 	float DistSqSum = 0.;
 	for (int i=0;i<Units.Num();i++) {
@@ -105,7 +105,7 @@ void ACppRTSPlayerController::AssignMoveTargets(TArray<ACppRTSCharacter*> Units,
 		for (int i=0;i<NearUnits.Num();i++) {
 			UnitActors.Add(Cast<AActor>(NearUnits[i]));
 		}
-		AvgLoc = UGameplayStatics::GetActorArrayAverageLocation(UnitActors);	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		AvgLoc = UGameplayStatics::GetActorArrayAverageLocation(UnitActors);
 		for (int i=0;i<NearUnits.Num();i++) {
 			NearUnits[i]->AddDestination((NearUnits[i]->GetActorLocation() - AvgLoc) + ClickLocation, bShift, true);
 		}

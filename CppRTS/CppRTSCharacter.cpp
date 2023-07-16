@@ -51,5 +51,11 @@ void ACppRTSCharacter::Tick(float DeltaSeconds)
 }
 
 void ACppRTSCharacter::AddDestination(FVector Destination, bool bAddReplace, bool bMoveTarget) {
-	
+	if (bMoveTarget) {
+		if (!bAddReplace) {	MoveDestinations.Empty();	}
+		MoveDestinations.Add(Destination);
+	} else {
+		if (!bAddReplace) {	CommandDestinations.Empty();	}
+		CommandDestinations.Add(Destination);
+	}
 }
