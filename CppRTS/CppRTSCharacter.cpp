@@ -49,3 +49,7 @@ void ACppRTSCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 }
+
+void ACppRTSCharacter::AddDestination(FVector Destination, bool bAddReplace, bool bMoveTarget) {
+	
+}

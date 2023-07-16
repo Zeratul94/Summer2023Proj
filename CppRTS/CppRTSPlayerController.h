@@ -6,6 +6,7 @@
 #include "Templates/SubclassOf.h"
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
+#include "CppRTSCharacter.h"
 #include "CppRTSPlayerController.generated.h"
 
 /** Forward declaration to improve compiling times */
@@ -39,6 +40,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* SetDestinationTouchAction;
 
+	bool bShift;
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
 	uint32 bMoveToMouseCursor : 1;
@@ -49,11 +51,14 @@ protected:
 	virtual void BeginPlay();
 
 	/** Input handlers for SetDestination action. */
-	void OnInputStarted();
-	void OnSetDestinationTriggered();
-	void OnSetDestinationReleased();
+	void OnSetDestinationStarted();
+    void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation);
+    void OnSetDestinationTriggered();
+    void OnSetDestinationReleased();
 private:
 	FVector CachedDestination;
+	UPROPERTY(EditAnywhere)
+	TArray<ACppRTSCharacter*> Selects;
 
 	bool bIsTouch; // Is it a touch device
 	float FollowTime; // For how long it has been pressed
