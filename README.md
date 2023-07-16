@@ -1,6 +1,6 @@
 # Summer2023Proj
 
-This is supposed to be a summer project I'm working on before Junior year. One of my friends will have edit permissions (if he requests them).
+This is (one of) the summer project(s) I'm working on before Junior year. One of my friends will have edit permissions (if he requests them).
 
 ## What is the Project?
 
