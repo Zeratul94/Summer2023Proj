@@ -2,7 +2,6 @@
 
 #include "CppRTSGameMode.h"
 #include "CppRTSPlayerController.h"
-#include "CppRTSCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
 ACppRTSGameMode::ACppRTSGameMode()
@@ -11,7 +10,7 @@ ACppRTSGameMode::ACppRTSGameMode()
 	PlayerControllerClass = ACppRTSPlayerController::StaticClass();
 
 	// set default pawn class to our Blueprinted character
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/TopDown/Blueprints/BP_TopDownCharacter"));
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/TopDown/Blueprints/BP_TopDownCameraPawn"));
 	if (PlayerPawnBPClass.Class != nullptr)
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;

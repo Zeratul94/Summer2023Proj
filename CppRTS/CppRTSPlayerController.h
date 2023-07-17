@@ -32,13 +32,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
 	
-	/** Jump Input Action */
+	/** Click Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* SetDestinationClickAction;
 
-	/** Jump Input Action */
+	/** Shift Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	class UInputAction* SetDestinationTouchAction;
+	class UInputAction* ShiftAction;
 
 	bool bShift;
 protected:
@@ -47,14 +47,23 @@ protected:
 
 	virtual void SetupInputComponent() override;
 	
-	// To add mapping context
+	// Called at initialization.
 	virtual void BeginPlay();
+
+	// Called every frame.
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** Input handlers for SetDestination action. */
 	void OnSetDestinationStarted();
-    void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation);
     void OnSetDestinationTriggered();
     void OnSetDestinationReleased();
+
+	/** Input handlers for Shift action. */
+	void OnShiftUp();
+	void OnShiftDown();
+	
+	/** Calculate the move-destinations of the commanded units. */
+	void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation);
 private:
 	FVector CachedDestination;
 	UPROPERTY(EditAnywhere)

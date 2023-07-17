@@ -2,6 +2,7 @@
 
 #include "CppRTSCharacter.h"
 #include "UObject/ConstructorHelpers.h"
+#include "AIController.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -48,6 +49,15 @@ ACppRTSCharacter::ACppRTSCharacter()
 void ACppRTSCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+	if (MoveDestinations.Num() > 0) {
+		AAIController aic;
+		aic.MoveToLocation(MoveDestinations[0], 80., false);
+		if (GetActorLocation().Equals(MoveDestinations[0], 100.)) {
+			MoveDestinations.RemoveAt(0);
+			CommandDestinations.RemoveAt(0);
+		}
+	}
 }
 
 void ACppRTSCharacter::AddDestination(FVector Destination, bool bAddReplace, bool bMoveTarget) {
