@@ -47,7 +47,7 @@ protected:
 
 	virtual void SetupInputComponent() override;
 	
-	// Called at initialization.
+	// Called at start.
 	virtual void BeginPlay();
 
 	// Called every frame.
