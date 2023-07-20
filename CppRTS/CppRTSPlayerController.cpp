@@ -30,8 +30,8 @@ void ACppRTSPlayerController::SetupInputComponent()
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent))
 	{
-		// Set up mouse input events
-		EnhancedInputComponent->BindAction(RMBAction, ETriggerEvent::Started, this, &ACppRTSPlayerController::OnRMBStarted); // RMB
+		/* Set up mouse input events */
+		EnhancedInputComponent->BindAction(RMBAction, ETriggerEvent::Started, this, &ACppRTSPlayerController::OnRMBDown); // RMB
 		// LMB
 		EnhancedInputComponent->BindAction(LMBAction, ETriggerEvent::Started, this, &ACppRTSPlayerController::OnLMBStarted);
 		EnhancedInputComponent->BindAction(LMBAction, ETriggerEvent::Completed, this, &ACppRTSPlayerController::OnLMBReleased);
@@ -44,7 +44,7 @@ void ACppRTSPlayerController::SetupInputComponent()
 }
 
 /* Input */
-void ACppRTSPlayerController::OnRMBStarted() {
+void ACppRTSPlayerController::OnRMBDown() {
 	FHitResult Hit;
 	bool bHitSuccessful = false;
 	
@@ -54,7 +54,9 @@ void ACppRTSPlayerController::OnRMBStarted() {
 		for (int i=0;i<Selects.Num();i++) {
 			Selects[i]->AddDestination(Hit.Location, bShift, false);
 		}
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FXCursor, Hit.Location);
+		if (Selects.Num() > 0) {
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FXCursor, Hit.Location);
+		}
 	}
 }
 
@@ -85,13 +87,17 @@ void ACppRTSPlayerController::BeginPlay()
 	{
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
-	SetInputMode(FInputModeGameAndUI());
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
 
-	// Create references
+	/* Create references */
+
+	// HUD
 	HUD_ref = Cast<ACppRTSHUD>(GetHUD());
 	if (HUD_ref == nullptr) {
 		ConsoleCommand("EXIT");
 	}
+	HUD_ref->Controller_ref = this;
 }
 
 void ACppRTSPlayerController::Tick(float DeltaSeconds)
@@ -102,6 +108,24 @@ void ACppRTSPlayerController::Tick(float DeltaSeconds)
 }
 
 /* Methods */
+
+// Selection
+void ACppRTSPlayerController::Select(ACppRTSCharacter *Unit) {
+	Selects.AddUnique(Unit);
+	//Unit.ReceiveSelect(this, true)
+}
+void ACppRTSPlayerController::Deselect(ACppRTSCharacter *Unit) {
+	Selects.Remove(Unit);
+	//Unit.ReceiveSelect(this, false)
+}
+void ACppRTSPlayerController::ClearSelection() {
+	for (int i=0;i<Selects.Num();i++) {
+		//Selects[i].ReceiveSelect(this, false)
+	}
+	Selects.Empty();
+}
+
+// AI
 void ACppRTSPlayerController::AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation) {
 	TArray<ACppRTSCharacter*> NearUnits;
 	TArray<ACppRTSCharacter*> FarUnits;

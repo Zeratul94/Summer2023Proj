@@ -19,33 +19,47 @@ class ACppRTSPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
+	/* Functions */
+
+	// Constructor
 	ACppRTSPlayerController();
 
-	/** Time Threshold to know if it was a short press */
+	// Selection
+	void Select(ACppRTSCharacter *Unit);
+	void Deselect(ACppRTSCharacter *Unit);
+	void ClearSelection();
+
+	/* Variables */
+
+	// Time Threshold to know if it was a short press
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	float ShortPressThreshold;
 
-	/** Shift */
+	// Shift value
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	bool bShift;
+
+	// Selects
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<ACppRTSCharacter*> Selects;
 	
-	/** FX Class that we will spawn when clicking */
+	// FX Class that we will spawn when clicking
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UNiagaraSystem* FXCursor;
 
-	/** MappingContext */
+	// MappingContext
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
 	
-	/** RMB Input Action */
+	// RMB Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* RMBAction;
 
-	/** LMB Input Action */
+	// LMB Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* LMBAction;
 
-	/** Shift Input Action */
+	// Shift Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* ShiftAction;
 protected:
@@ -58,7 +72,7 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Input handlers for RMB action. */
-	void OnRMBStarted();
+	void OnRMBDown();
     void OnRMBReleased();
 
 	/** Input handlers for LMB action. */
@@ -68,17 +82,15 @@ protected:
 	/** Input handlers for Shift action. */
 	void OnShiftUp();
 	void OnShiftDown();
-	
-	/** Calculate the move-destinations of the commanded units. */
-	void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation);
-private:
-	// Selects
-	UPROPERTY(EditAnywhere)
-	TArray<ACppRTSCharacter*> Selects;
 
+    /** Calculate the move-destinations of the commanded units. */
+    void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation);
+private:
 	// HUD ref
 	UPROPERTY(EditAnywhere)
 	ACppRTSHUD* HUD_ref;
+
+	FInputModeGameAndUI InputMode;
 };
 
 
