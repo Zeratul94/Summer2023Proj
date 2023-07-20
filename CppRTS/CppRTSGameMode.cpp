@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Gedalya Gordon and Epic Games, Inc. All Rights Reserved.
 
 #include "CppRTSGameMode.h"
 #include "CppRTSPlayerController.h"

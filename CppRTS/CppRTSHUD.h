@@ -10,8 +10,11 @@
  * 
  */
 UCLASS()
-class CPPRTS_API ACppRTSHUD : public AHUD
+class ACppRTSHUD : public AHUD// , public IRTS_Select
 {
 	GENERATED_BODY()
 	
+public:
+	void BeginSelect();
+	void EndSelect();
 };

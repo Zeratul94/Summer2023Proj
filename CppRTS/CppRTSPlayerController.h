@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Gedalya Gordon and Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
 #include "CppRTSCharacter.h"
+#include "CppRTSHUD.h"
 #include "CppRTSPlayerController.generated.h"
 
 /** Forward declaration to improve compiling times */
@@ -23,6 +24,10 @@ public:
 	/** Time Threshold to know if it was a short press */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	float ShortPressThreshold;
+
+	/** Shift */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	bool bShift;
 	
 	/** FX Class that we will spawn when clicking */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
@@ -32,19 +37,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
 	
-	/** Click Input Action */
+	/** RMB Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	class UInputAction* SetDestinationClickAction;
+	class UInputAction* RMBAction;
+
+	/** LMB Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	class UInputAction* LMBAction;
 
 	/** Shift Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* ShiftAction;
-
-	bool bShift;
 protected:
-	/** True if the controlled character should navigate to the mouse cursor. */
-	uint32 bMoveToMouseCursor : 1;
-
 	virtual void SetupInputComponent() override;
 	
 	// Called at start.
@@ -53,10 +57,13 @@ protected:
 	// Called every frame.
 	virtual void Tick(float DeltaSeconds) override;
 
-	/** Input handlers for SetDestination action. */
-	void OnSetDestinationStarted();
-    void OnSetDestinationTriggered();
-    void OnSetDestinationReleased();
+	/** Input handlers for RMB action. */
+	void OnRMBStarted();
+    void OnRMBReleased();
+
+	/** Input handlers for LMB action. */
+	void OnLMBStarted();
+    void OnLMBReleased();
 
 	/** Input handlers for Shift action. */
 	void OnShiftUp();
@@ -65,12 +72,13 @@ protected:
 	/** Calculate the move-destinations of the commanded units. */
 	void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation);
 private:
-	FVector CachedDestination;
+	// Selects
 	UPROPERTY(EditAnywhere)
 	TArray<ACppRTSCharacter*> Selects;
 
-	bool bIsTouch; // Is it a touch device
-	float FollowTime; // For how long it has been pressed
+	// HUD ref
+	UPROPERTY(EditAnywhere)
+	ACppRTSHUD* HUD_ref;
 };
 
 

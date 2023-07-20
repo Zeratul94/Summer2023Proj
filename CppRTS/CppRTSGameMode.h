@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Gedalya Gordon and Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -14,6 +14,3 @@ class ACppRTSGameMode : public AGameModeBase
 public:
 	ACppRTSGameMode();
 };
-
-
-
