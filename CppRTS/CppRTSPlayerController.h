@@ -23,10 +23,14 @@ public:
 
 	// Constructor
 	ACppRTSPlayerController();
+	ACppRTSPlayerController(FName OwnershipTag);
 
 	// Selection
-	void Select(ACppRTSCharacter *Unit);
+	void Select(TArray<ACppRTSCharacter*> Units);
+	void Select(ACppRTSCharacter* Unit);
+
 	void Deselect(ACppRTSCharacter *Unit);
+	
 	void ClearSelection();
 
 	/* Variables */
@@ -39,13 +43,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	bool bShift;
 
+	// Tag to identify owned units
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName OwnedTag = FName(TEXT("Player1"));
+
 	// Selects
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TArray<ACppRTSCharacter*> Selects;
 	
-	// FX Class that we will spawn when clicking
+	// FX Class that we will spawn when a command is issued
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UNiagaraSystem* FXCursor;
+	UNiagaraSystem* MoveTargetParticle;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UNiagaraSystem* AttackTargetParticle;
 
 	// MappingContext
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
@@ -76,20 +86,28 @@ protected:
     void OnRMBReleased();
 
 	/** Input handlers for LMB action. */
-	void OnLMBStarted();
-    void OnLMBReleased();
+	void OnLMBDown();
+    void OnLMBUp();
 
 	/** Input handlers for Shift action. */
 	void OnShiftUp();
 	void OnShiftDown();
 
-    /** Calculate the move-destinations of the commanded units. */
-    void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation);
+	/** Give a command to the selected units */
+	void Command(FHitResult Target, ECommand cmd, bool bQueue = false);
+
+    /** Calculate the move-destinations of the commanded units. DOES NOT YET ACCOUNT FOR TARGET BEING ON A BUILDING */
+    void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation, bool bQueue = false);
 private:
 	// HUD ref
 	UPROPERTY(EditAnywhere)
 	ACppRTSHUD* HUD_ref;
 
+	// The units this Controller owns
+	UPROPERTY(EditAnywhere)
+	TArray<ACppRTSCharacter*> OwnedUnits;
+
+	// Input Mode
 	FInputModeGameAndUI InputMode;
 };
 

@@ -7,6 +7,8 @@
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "CppRTSCharacter.h"
+#include "CppUtils.h"
+#include "AIController.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
@@ -22,6 +24,11 @@ ACppRTSPlayerController::ACppRTSPlayerController()
 	bShift = false;
 }
 
+ACppRTSPlayerController::ACppRTSPlayerController(FName OwnershipTag) {
+	OwnedTag = OwnershipTag;
+	ACppRTSPlayerController();
+}
+
 void ACppRTSPlayerController::SetupInputComponent()
 {
 	// set up gameplay key bindings
@@ -33,9 +40,9 @@ void ACppRTSPlayerController::SetupInputComponent()
 		/* Set up mouse input events */
 		EnhancedInputComponent->BindAction(RMBAction, ETriggerEvent::Started, this, &ACppRTSPlayerController::OnRMBDown); // RMB
 		// LMB
-		EnhancedInputComponent->BindAction(LMBAction, ETriggerEvent::Started, this, &ACppRTSPlayerController::OnLMBStarted);
-		EnhancedInputComponent->BindAction(LMBAction, ETriggerEvent::Completed, this, &ACppRTSPlayerController::OnLMBReleased);
-		EnhancedInputComponent->BindAction(LMBAction, ETriggerEvent::Canceled, this, &ACppRTSPlayerController::OnLMBReleased);
+		EnhancedInputComponent->BindAction(LMBAction, ETriggerEvent::Started, this, &ACppRTSPlayerController::OnLMBDown);
+		EnhancedInputComponent->BindAction(LMBAction, ETriggerEvent::Completed, this, &ACppRTSPlayerController::OnLMBUp);
+		EnhancedInputComponent->BindAction(LMBAction, ETriggerEvent::Canceled, this, &ACppRTSPlayerController::OnLMBUp);
 		// Shift
 		EnhancedInputComponent->BindAction(ShiftAction, ETriggerEvent::Started, this, &ACppRTSPlayerController::OnShiftDown);
 		EnhancedInputComponent->BindAction(ShiftAction, ETriggerEvent::Completed, this, &ACppRTSPlayerController::OnShiftUp);
@@ -50,12 +57,9 @@ void ACppRTSPlayerController::OnRMBDown() {
 	
 	bHitSuccessful = APlayerController::GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
 	if (bHitSuccessful) {
-		AssignMoveTargets(Selects, Hit.Location);
-		for (int i=0;i<Selects.Num();i++) {
-			Selects[i]->AddDestination(Hit.Location, bShift, false);
-		}
-		if (Selects.Num() > 0) {
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FXCursor, Hit.Location);
+		Command(Hit, ECommand::Move, bShift);
+		if (/* target is enemy */ false) {
+			Command(Hit, ECommand::Attack, true);
 		}
 	}
 }
@@ -68,11 +72,11 @@ void ACppRTSPlayerController::OnShiftDown() {
 	bShift = true;
 }
 
-void ACppRTSPlayerController::OnLMBStarted() {
+void ACppRTSPlayerController::OnLMBDown() {
 	HUD_ref->BeginSelect();
 }
 
-void ACppRTSPlayerController::OnLMBReleased() {
+void ACppRTSPlayerController::OnLMBUp() {
 	HUD_ref->EndSelect();
 }
 
@@ -98,6 +102,14 @@ void ACppRTSPlayerController::BeginPlay()
 		ConsoleCommand("EXIT");
 	}
 	HUD_ref->Controller_ref = this;
+
+	// Possess Units
+	TArray<AActor*> OwnedActors;
+	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), ACppRTSCharacter::StaticClass(), OwnedTag, OwnedActors);
+	for (int i=0;i<OwnedActors.Num();i++) {
+		ACppRTSCharacter* Unit = Cast<ACppRTSCharacter>(OwnedActors[i]);
+		if (Unit != nullptr) OwnedUnits.AddUnique(Unit);
+	}
 }
 
 void ACppRTSPlayerController::Tick(float DeltaSeconds)
@@ -105,6 +117,22 @@ void ACppRTSPlayerController::Tick(float DeltaSeconds)
 	// Call the base class
     Super::Tick(DeltaSeconds);
 
+	// Update all of our units' movement (Here rather than on each unit to improve performance (?))
+	for (int i=0;i<OwnedUnits.Num();i++) {
+		ACppRTSCharacter* Unit = OwnedUnits[i];
+		if (!Unit->Tasks.IsEmpty()) {
+			switch (Unit->Tasks[0]) {
+				case ECommand::Move:
+					Unit->AIC->MoveToLocation(Unit->LocationTargets[0], 80., false);
+					if (Unit->GetActorLocation().Equals(Unit->LocationTargets[0], 100.)) {
+						Unit->CompleteTask();
+					}
+					break;
+				case ECommand::Attack:
+					break;
+			}
+		}
+	}
 }
 
 /* Methods */
@@ -112,21 +140,21 @@ void ACppRTSPlayerController::Tick(float DeltaSeconds)
 // Selection
 void ACppRTSPlayerController::Select(ACppRTSCharacter *Unit) {
 	Selects.AddUnique(Unit);
-	//Unit.ReceiveSelect(this, true)
+	Unit->ReceiveSelect(this, true);
 }
 void ACppRTSPlayerController::Deselect(ACppRTSCharacter *Unit) {
 	Selects.Remove(Unit);
-	//Unit.ReceiveSelect(this, false)
+	Unit->ReceiveSelect(this, false);
 }
 void ACppRTSPlayerController::ClearSelection() {
 	for (int i=0;i<Selects.Num();i++) {
-		//Selects[i].ReceiveSelect(this, false)
+		Selects[i]->ReceiveSelect(this, false);
 	}
 	Selects.Empty();
 }
 
 // AI
-void ACppRTSPlayerController::AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation) {
+void ACppRTSPlayerController::AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation, bool bQueue) {
 	TArray<ACppRTSCharacter*> NearUnits;
 	TArray<ACppRTSCharacter*> FarUnits;
 
@@ -159,7 +187,7 @@ void ACppRTSPlayerController::AssignMoveTargets(TArray<ACppRTSCharacter*> Units,
 			FVector unitLoc = FarUnits[i]->GetActorLocation();
 			FVector dir = FVector(unitLoc.X, unitLoc.Y, ClickLocation.Z) - ClickLocation;
 			dir.Normalize(0.0001);
-			FarUnits[i]->AddDestination(ClickLocation + (dir*stdev*0.25), bShift, true);
+			FarUnits[i]->AddCommand(ECommand::Move, ClickLocation + (dir*stdev*0.25), bQueue, true);
 		}
 
 		UnitActors.Empty();
@@ -168,7 +196,7 @@ void ACppRTSPlayerController::AssignMoveTargets(TArray<ACppRTSCharacter*> Units,
 		}
 		AvgLoc = UGameplayStatics::GetActorArrayAverageLocation(UnitActors);
 		for (int i=0;i<NearUnits.Num();i++) {
-			NearUnits[i]->AddDestination((NearUnits[i]->GetActorLocation() - AvgLoc) + ClickLocation, bShift, true);
+			NearUnits[i]->AddCommand(ECommand::Move, (NearUnits[i]->GetActorLocation() - AvgLoc) + ClickLocation, bQueue, true);
 		}
 	}
 
@@ -177,7 +205,48 @@ void ACppRTSPlayerController::AssignMoveTargets(TArray<ACppRTSCharacter*> Units,
 			FVector unitLoc = Units[i]->GetActorLocation();
 			FVector dir = FVector(unitLoc.X, unitLoc.Y, ClickLocation.Z) - ClickLocation;
 			dir.Normalize(0.0001);
-			Units[i]->AddDestination(ClickLocation + (dir*50.), bShift, true);
+			Units[i]->AddCommand(ECommand::Move, ClickLocation + (dir*50.), bQueue, true);
 		}
+	}
+}
+
+// Commands
+void ACppRTSPlayerController::Command(FHitResult Target, ECommand cmd, bool bQueue) {
+	bool bDidNotHitObject = Cast<ACppRTSCharacter>(Target.GetActor()) == nullptr;
+
+	FVector TrueTargetLoc;
+	switch (cmd) {
+		case ECommand::Move:
+			TrueTargetLoc = bDidNotHitObject ? Target.Location : Target.GetActor()->GetActorLocation();
+			if (!Selects.IsEmpty()) {
+				AssignMoveTargets(Selects, TrueTargetLoc, bQueue);
+				for (int i=0;i<Selects.Num();i++) {
+					Selects[i]->AddCommand(ECommand::Move, TrueTargetLoc, bQueue, false);
+				}
+
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), MoveTargetParticle, TrueTargetLoc);
+			}
+			break;
+		case ECommand::Attack:
+			if (bDidNotHitObject) {
+				// Queue an attack-move
+				if (!Selects.IsEmpty()) {
+					for (int i=0;i<Selects.Num();i++) {
+						Selects[i]->AddCommand(ECommand::Attack, Target.Location, bQueue, false);
+					}
+				}
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), AttackTargetParticle, Target.Location);
+			}
+			// Queue a targeted attack on the hit unit
+			else {
+				if (!Selects.IsEmpty()) {
+					for (int i=0;i<Selects.Num();i++) {
+						Selects[i]->AddCommand(ECommand::Attack, Cast<ACppRTSCharacter>(Target.GetActor()), bQueue, false);
+					}
+					
+					UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), AttackTargetParticle, Target.GetActor()->GetActorLocation());
+				}
+			}
+			break;
 	}
 }

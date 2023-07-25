@@ -6,6 +6,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "CppRTSPlayerController.h"
 #include "Math/Vector2D.h"
+#include "Kismet/GameplayStatics.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 
 ACppRTSHUD::ACppRTSHUD()
@@ -23,12 +24,11 @@ void ACppRTSHUD::EndSelect() {
     // Store in the ClickPoint that we are no longer selecting
     ClickPoint = FVector2D(-4096., -4096.);
 
-    if (ProspectiveSelects.Num() > 0) {
+    if (!ProspectiveSelects.IsEmpty()) {
         // If Shift is held, modify the current selection.
         if (Controller_ref->bShift) {
             // If multiple units are boxed, select all of them.
             if (ProspectiveSelects.Num() > 1) {
-                GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("%i"), ProspectiveSelects.Num()));
                 for (int i=0;i<ProspectiveSelects.Num();i++) {
                     Controller_ref->Select(ProspectiveSelects[i]);
                 }
@@ -62,6 +62,7 @@ void ACppRTSHUD::DrawHUD()
 {
     Super::DrawHUD();
 
+    // Selection Box
     if (ClickPoint.X >= -2048. && ClickPoint.Y >= -2048.) {
         // Store the current cursor location in DragPoint
         FVector2D DragPoint = UWidgetLayoutLibrary::GetMousePositionOnViewport(GetWorld()) * UWidgetLayoutLibrary::GetViewportScale(GetWorld());
@@ -76,5 +77,22 @@ void ACppRTSHUD::DrawHUD()
         // Identify boxed units and store them in ProspectiveSelects
         ProspectiveSelects.Empty();
         GetActorsInSelectionRectangle<ACppRTSCharacter>(ClickPoint, DragPoint, ProspectiveSelects, false, true);
+    }
+    
+    // Movement Destination Indicators
+    for (int c=0;c<Controller_ref->Selects.Num();c++) {
+        ACppRTSCharacter* Select = Controller_ref->Selects[c];
+        TArray<FVector> MovementLocs;
+        MovementLocs.Add(Cast<AActor>(Select)->GetActorLocation());
+        MovementLocs.Append(Select->CommandTargets);
+
+        for (int i=1;i<MovementLocs.Num();i++) {
+            FVector2D StartPt;
+            UGameplayStatics::ProjectWorldToScreen(Controller_ref, MovementLocs[i-1], StartPt);
+            FVector2D EndPt;
+            UGameplayStatics::ProjectWorldToScreen(Controller_ref, MovementLocs[i], EndPt);
+
+            DrawLine(StartPt.X, StartPt.Y, EndPt.X, EndPt.Y, FLinearColor::Green, 0.5);
+        }
     }
 }
