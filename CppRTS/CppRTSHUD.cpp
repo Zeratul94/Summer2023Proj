@@ -49,6 +49,7 @@ void ACppRTSHUD::EndSelect() {
         else {
             Controller_ref->ClearSelection();
             for (int i=0;i<ProspectiveSelects.Num();i++) {
+                GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, *FString::Printf(TEXT("%s"), *(ProspectiveSelects[i]->GetName())));
                 Controller_ref->Select(ProspectiveSelects[i]);
             }
         }

@@ -8,7 +8,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "CppUtils.h"
+#include "RTSUtils.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/DecalComponent.h"
 #include "Materials/Material.h"
@@ -85,9 +85,14 @@ void ACppRTSCharacter::Tick(float DeltaSeconds)
 // 	}
 // }
 
-void ACppRTSCharacter::ReceiveSelect(APlayerController *Selector, bool bNewSelectionStatus) {
+void ACppRTSCharacter::ReceiveSelect(ACppRTSPlayerController *Selector, bool bNewSelectionStatus) {
 	UDecalComponent* SelectionCircle = GetComponentByClass<UDecalComponent>();
 	if (SelectionCircle) {
+		switch (URTSUtils::Diplomacy(GetWorld(), Selector, OwningPlayer)) {
+			// Set the color of the SelectionCircle 
+			case EDiplomacy::Self:
+				break;
+		}
 		SelectionCircle->SetVisibility(bNewSelectionStatus);
 	}
 }
@@ -132,6 +137,7 @@ void ACppRTSCharacter::CompleteTask() {
 	switch (Tasks[0]) {
 		case ECommand::Move:
 			LocationTargets.RemoveAt(0);
+			CommandTargets.RemoveAt(0);
 			break;
 		case ECommand::Attack:
 			UnitTargets.RemoveAt(0);

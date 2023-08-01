@@ -19,11 +19,18 @@ class ACppRTSPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	/* Functions */
+	/** Functions **/
 
-	// Constructor
+	/* Constructors */
+	// Default
 	ACppRTSPlayerController();
+
+	// Give this Player a custom OwnershipTag. Default is FName(TEXT("Player1")).
 	ACppRTSPlayerController(FName OwnershipTag);
+	// Explicitly tell this player whether to treat Neutral units as hostile, e.g. by auto-attacking them or treating a right-click as an Attack command. Default is false.
+	ACppRTSPlayerController(bool bAutoAttackNeutrals);
+	// Do both of the above.
+	ACppRTSPlayerController(FName OwnershipTag, bool bAutoAttackNeutrals);
 
 	// Selection
 	void Select(TArray<ACppRTSCharacter*> Units);
@@ -39,13 +46,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	float ShortPressThreshold;
 
-	// Shift value
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	bool bShift;
-
 	// Tag to identify owned units
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FName OwnedTag = FName(TEXT("Player1"));
+
+	// Shift value
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	bool bShift;
 
 	// Selects
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -99,6 +106,10 @@ protected:
     /** Calculate the move-destinations of the commanded units. DOES NOT YET ACCOUNT FOR TARGET BEING ON A BUILDING */
     void AssignMoveTargets(TArray<ACppRTSCharacter*> Units, FVector ClickLocation, bool bQueue = false);
 private:
+	// Whether right-clicked Neutral units should be attacked as enemies, or Neutral units within aggro range should be auto-attacked
+	UPROPERTY(EditAnywhere)
+	bool bAttackNeutrals = false;
+
 	// HUD ref
 	UPROPERTY(EditAnywhere)
 	ACppRTSHUD* HUD_ref;

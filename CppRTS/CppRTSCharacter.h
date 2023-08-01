@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Components/SphereComponent.h"
-#include "CppUtils.h"
+#include "RTSUtils.h"
 #include "CppRTSCharacter.generated.h"
 
 UCLASS(Blueprintable)
@@ -47,7 +47,7 @@ public:
 	// Called every frame.
 	virtual void Tick(float DeltaSeconds) override;
 
-	void ReceiveSelect(APlayerController *Selector, bool bNewSelectionStatus);
+	void ReceiveSelect(ACppRTSPlayerController *Selector, bool bNewSelectionStatus);
 
     void AddCommand(ECommand Action, FVector Destination, bool bAddReplace, bool bActionTarget);
 	void AddCommand(ECommand Action, ACppRTSCharacter *TargetUnit, bool bAddReplace, bool bActionTarget);

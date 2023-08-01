@@ -7,7 +7,7 @@
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "CppRTSCharacter.h"
-#include "CppUtils.h"
+#include "RTSUtils.h"
 #include "AIController.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
@@ -26,6 +26,15 @@ ACppRTSPlayerController::ACppRTSPlayerController()
 
 ACppRTSPlayerController::ACppRTSPlayerController(FName OwnershipTag) {
 	OwnedTag = OwnershipTag;
+	ACppRTSPlayerController();
+}
+ACppRTSPlayerController::ACppRTSPlayerController(bool bAutoAttackNeutrals) {
+	bAttackNeutrals = bAutoAttackNeutrals;
+	ACppRTSPlayerController();
+}
+ACppRTSPlayerController::ACppRTSPlayerController(FName OwnershipTag, bool bAutoAttackNeutrals) {
+	OwnedTag = OwnershipTag;
+	bAttackNeutrals = bAutoAttackNeutrals;
 	ACppRTSPlayerController();
 }
 
@@ -58,8 +67,15 @@ void ACppRTSPlayerController::OnRMBDown() {
 	bHitSuccessful = APlayerController::GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
 	if (bHitSuccessful) {
 		Command(Hit, ECommand::Move, bShift);
-		if (/* target is enemy */ false) {
-			Command(Hit, ECommand::Attack, true);
+
+		ACppRTSCharacter* HitUnit = Cast<ACppRTSCharacter>(Hit.GetActor());
+		if (HitUnit != nullptr && HitUnit->OwningPlayer != nullptr) {
+			EDiplomacy HitDiplomacy = URTSUtils::Diplomacy(GetWorld(), this, HitUnit->OwningPlayer);
+			bool bEnemyClicked = (HitDiplomacy == EDiplomacy::Enemy || (bAttackNeutrals && HitDiplomacy == EDiplomacy::Neutral));
+			if (bEnemyClicked) {
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, TEXT("Attack"));
+				Command(Hit, ECommand::Attack, true);
+			}
 		}
 	}
 }
@@ -108,7 +124,10 @@ void ACppRTSPlayerController::BeginPlay()
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), ACppRTSCharacter::StaticClass(), OwnedTag, OwnedActors);
 	for (int i=0;i<OwnedActors.Num();i++) {
 		ACppRTSCharacter* Unit = Cast<ACppRTSCharacter>(OwnedActors[i]);
-		if (Unit != nullptr) OwnedUnits.AddUnique(Unit);
+		if (Unit != nullptr) {
+			OwnedUnits.AddUnique(Unit);
+			Unit->OwningPlayer = this;
+		}
 	}
 }
 
@@ -123,9 +142,11 @@ void ACppRTSPlayerController::Tick(float DeltaSeconds)
 		if (!Unit->Tasks.IsEmpty()) {
 			switch (Unit->Tasks[0]) {
 				case ECommand::Move:
-					Unit->AIC->MoveToLocation(Unit->LocationTargets[0], 80., false);
-					if (Unit->GetActorLocation().Equals(Unit->LocationTargets[0], 100.)) {
-						Unit->CompleteTask();
+					if (!Unit->LocationTargets.IsEmpty()) {
+						Unit->AIC->MoveToLocation(Unit->LocationTargets[0], 80., false);
+						if (Unit->GetActorLocation().Equals(Unit->LocationTargets[0], 100.)) {
+							Unit->CompleteTask();
+						}
 					}
 					break;
 				case ECommand::Attack:
@@ -139,6 +160,7 @@ void ACppRTSPlayerController::Tick(float DeltaSeconds)
 
 // Selection
 void ACppRTSPlayerController::Select(ACppRTSCharacter *Unit) {
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, *FString::Printf(TEXT("%s"), *(Unit->GetName())));
 	Selects.AddUnique(Unit);
 	Unit->ReceiveSelect(this, true);
 }
@@ -219,10 +241,10 @@ void ACppRTSPlayerController::Command(FHitResult Target, ECommand cmd, bool bQue
 		case ECommand::Move:
 			TrueTargetLoc = bDidNotHitObject ? Target.Location : Target.GetActor()->GetActorLocation();
 			if (!Selects.IsEmpty()) {
-				AssignMoveTargets(Selects, TrueTargetLoc, bQueue);
 				for (int i=0;i<Selects.Num();i++) {
 					Selects[i]->AddCommand(ECommand::Move, TrueTargetLoc, bQueue, false);
 				}
+				AssignMoveTargets(Selects, TrueTargetLoc, bQueue);
 
 				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), MoveTargetParticle, TrueTargetLoc);
 			}
